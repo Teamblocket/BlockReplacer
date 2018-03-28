@@ -31,7 +31,7 @@ class Main extends PluginBase implements Listener {
 	public function onEnable() {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 
-		if(is_file($this->getDataFolder() . 'resources/' . 'config.yml') == false){
+		if(is_file($this->getDataFolder() . 'config.yml') == false){
 			$data = [
 				'blocks-replacing' => [
 					'7:0:5'
