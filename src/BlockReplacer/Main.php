@@ -29,7 +29,7 @@ class Main extends PluginBase implements Listener {
 	public function onEnable() {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 
-		if(is_file($this->getDataFolder() . 'config.yml') == false){
+		if($this->getConfig()->exists('blocks-replacing') == false){
 			$data = [
 				'blocks-replacing' => [
 					'7:0:5'
@@ -37,6 +37,7 @@ class Main extends PluginBase implements Listener {
 			];
 			$this->getConfig()->setAll($data);
 			$this->getConfig()->save();
+			$this->getConfig()->reload();
 		}
 		$this->getConfig()->save();
 	}
