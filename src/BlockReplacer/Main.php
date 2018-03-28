@@ -10,6 +10,7 @@ namespace BlockReplacer;
 
 
 use pocketmine\block\Block;
+use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\Listener;
 
 use pocketmine\plugin\PluginBase;
@@ -23,7 +24,10 @@ use pocketmine\scheduler\Task;
  * @package BlockReplacer
  */
 class Main extends PluginBase implements Listener {
-
+	
+	/** @var string[] */
+	public $blocks = [];
+	
 	public function onEnable() {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 
@@ -63,20 +67,30 @@ class Main extends PluginBase implements Listener {
 				break;
 			}
 		}
-
+		
+		$block = $event->getBlock();
+		
+		$this->blocks[] = $block->getX().':'.$block->getY().':'.$block->getZ();
+		
 		if($found == true && $seconds !== null){
-
-			$this->getServer()->getScheduler()->scheduleDelayedTask(new class($event->getBlock()) extends Task{
+			
+			$plugin = $this;
+			
+			$this->getServer()->getScheduler()->scheduleDelayedTask(new class($block, $plugin) extends Task{
 
 				/** @var Block  */
 				private $block;
-
+				
+				private $plugin;
+				
 				/**
 				 *  constructor.
 				 * @param Block $block
+				 * @param Main $plugin
 				 */
-				public function __construct(Block $block) {
+				public function __construct(Block $block, Main $plugin) {
 					$this->block = $block;
+					$this->plugin = $plugin;
 				}
 
 				/**
@@ -84,9 +98,35 @@ class Main extends PluginBase implements Listener {
 				 */
 				public function onRun(int $currentTick) {
 					$this->block->getLevel()->setBlock($this->block->asVector3(), $this->block);
+					
+					foreach($this->plugin->blocks as $key => $value){
+						$param = explode(':', $value);
+						
+						if($param[0] == $this->block->x)
+							if($param[1] == $this->block->y)
+								if($param[2] == $this->block->z) unset($this->plugin->blocks[$key]);
+					}
 				}
 
 			}, $seconds * 20);
+		}
+	}
+
+	/**
+	 * @param BlockPlaceEvent $event
+	 */
+	public function onPlace(BlockPlaceEvent $event){
+		$newTable = [];
+		foreach($this->blocks as $key => $value){
+			$newTable[$value] = $key;
+		}
+		
+		$block = $event->getBlock();
+		$coords = $block->getX().':'.$block->getY().':'.$block->getZ();
+		
+		if(isset($this->blocks[$newTable[$coords]])){
+			$event->getPlayer()->sendMessage("There's currently a block being replaced here!");
+			$event->setCancelled();
 		}
 	}
 }
