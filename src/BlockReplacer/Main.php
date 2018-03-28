@@ -9,12 +9,13 @@
 namespace BlockReplacer;
 
 use pocketmine\{
-	block\Block,
-	event\Listener,
-	scheduler\Task,
-	plugin\PluginBase,
-	event\block\BlockPlaceEvent,
-	event\block\BlockBreakEvent
+	block\Block,  
+	utils\Config,
+	event\Listener, 
+	scheduler\Task, 
+	plugin\PluginBase, 
+	event\block\BlockPlaceEvent, 
+	event\block\BlockBreakEvent,
 };
 
 /**
@@ -26,20 +27,19 @@ class Main extends PluginBase implements Listener {
 	/** @var string[] */
 	public $blocks = [];
 
+	/** @var Config */
+	private $cfg;
+
 	public function onEnable() {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 
-		if($this->getConfig()->exists('blocks-replacing') == false){
-			$data = [
-				'blocks-replacing' => [
-					'7:0:5'
-				]
-			];
-			$this->getConfig()->setAll($data);
-			$this->getConfig()->save();
-			$this->getConfig()->reload();
-		}
-		$this->getConfig()->save();
+		if(is_dir($this->getDataFolder()) == false) mkdir($this->getDataFolder());
+
+		$this->cfg = new Config($this->getDataFolder() . 'config.yml', Config::YAML, [
+			'blocks-replacing' => [
+				'7:0:5'
+			]
+		]);
 	}
 
 	/**
@@ -49,15 +49,15 @@ class Main extends PluginBase implements Listener {
 		if($event->isCancelled()) return;
 
 		$block = $event->getBlock();
-		
+
 		$found = false;
 		$seconds = null;
-		
-		foreach($this->getConfig()->get('blocks-replacing') as $data){
+
+		foreach($this->cfg->get('blocks-replacing') as $data){
 			$param = explode(':', $data);
 
 
-			if($param[0] = $block->getId()){
+			if($param[0] == $block->getId()){
 				if($param[1] == 0 or $param[1] == $block->getDamage()){
 					$seconds = $param[2] == null ? 5 : $param[2];
 					$found = true;
@@ -66,12 +66,12 @@ class Main extends PluginBase implements Listener {
 
 			if($found) break;
 		}
-		
+
 
 		if($found){
 
 			$this->blocks[] = $block->getX().':'.$block->getY().':'.$block->getZ();
-			
+
 
 			$this->getServer()->getScheduler()->scheduleDelayedTask(new class($block, $this) extends Task{
 
@@ -121,7 +121,7 @@ class Main extends PluginBase implements Listener {
 		$block = $event->getBlock();
 		$coords = $block->getX().':'.$block->getY().':'.$block->getZ();
 
-		if(isset($this->blocks[$newTable[$coords]])){
+		if(isset($newTable[$coords])){
 			$event->getPlayer()->sendMessage("There's currently a block being replaced here!");
 			$event->setCancelled();
 		}
