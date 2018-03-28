@@ -8,26 +8,24 @@
 
 namespace BlockReplacer;
 
-
-use pocketmine\block\Block;
-use pocketmine\event\block\BlockPlaceEvent;
-use pocketmine\event\Listener;
-
-use pocketmine\plugin\PluginBase;
-
-use pocketmine\event\block\BlockBreakEvent;
-use pocketmine\scheduler\Task;
-
+use pocketmine\{
+	block\Block,
+	event\Listener,
+	scheduler\Task,
+	plugin\PluginBase,
+	event\block\BlockPlaceEvent,
+	event\block\BlockBreakEvent
+};
 
 /**
  * Class Main
  * @package BlockReplacer
  */
 class Main extends PluginBase implements Listener {
-	
+
 	/** @var string[] */
 	public $blocks = [];
-	
+
 	public function onEnable() {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 
@@ -49,40 +47,38 @@ class Main extends PluginBase implements Listener {
 	public function onBlock(BlockBreakEvent $event){
 		if($event->isCancelled()) return;
 
+		$block = $event->getBlock();
+		
 		$found = false;
 		$seconds = null;
+		
 		foreach($this->getConfig()->get('blocks-replacing') as $data){
 			$param = explode(':', $data);
 
-			if($param[0] == $event->getBlock()->getId()){
 
-				if($param[1] == 0){
+			if($param[0] = $block->getId()){
+				if($param[1] == 0 or $param[1] == $block->getDamage()){
+					$seconds = $param[2] == null ? 5 : $param[2];
 					$found = true;
-					break;
 				}
-
-				if($param[1] == $event->getBlock()->getDamage()) $found = true;
-				if($param[2] !== null) $seconds = $param[2];
-
-				break;
 			}
+
+			if($found) break;
 		}
 		
-		$block = $event->getBlock();
-		
-		$this->blocks[] = $block->getX().':'.$block->getY().':'.$block->getZ();
-		
-		if($found == true && $seconds !== null){
+
+		if($found){
+
+			$this->blocks[] = $block->getX().':'.$block->getY().':'.$block->getZ();
 			
-			$plugin = $this;
-			
-			$this->getServer()->getScheduler()->scheduleDelayedTask(new class($block, $plugin) extends Task{
+
+			$this->getServer()->getScheduler()->scheduleDelayedTask(new class($block, $this) extends Task{
 
 				/** @var Block  */
 				private $block;
-				
+
 				private $plugin;
-				
+
 				/**
 				 *  constructor.
 				 * @param Block $block
@@ -98,10 +94,10 @@ class Main extends PluginBase implements Listener {
 				 */
 				public function onRun(int $currentTick) {
 					$this->block->getLevel()->setBlock($this->block->asVector3(), $this->block);
-					
+
 					foreach($this->plugin->blocks as $key => $value){
 						$param = explode(':', $value);
-						
+
 						if($param[0] == $this->block->x)
 							if($param[1] == $this->block->y)
 								if($param[2] == $this->block->z) unset($this->plugin->blocks[$key]);
@@ -120,10 +116,10 @@ class Main extends PluginBase implements Listener {
 		foreach($this->blocks as $key => $value){
 			$newTable[$value] = $key;
 		}
-		
+
 		$block = $event->getBlock();
 		$coords = $block->getX().':'.$block->getY().':'.$block->getZ();
-		
+
 		if(isset($this->blocks[$newTable[$coords]])){
 			$event->getPlayer()->sendMessage("There's currently a block being replaced here!");
 			$event->setCancelled();
