@@ -43,6 +43,7 @@ class Main extends PluginBase implements Listener {
 	}
 
 	/**
+	 * @priority Normal
 	 * @param BlockBreakEvent $event
 	 */
 	public function onBlock(BlockBreakEvent $event){
@@ -110,6 +111,7 @@ class Main extends PluginBase implements Listener {
 	}
 
 	/**
+         * @priority Normal
 	 * @param BlockPlaceEvent $event
 	 */
 	public function onPlace(BlockPlaceEvent $event){
