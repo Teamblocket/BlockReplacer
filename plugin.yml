@@ -1,6 +1,6 @@
 name: BlockReplacer
 main: BlockReplacer\Main
-api: [3.0.0-ALPHA10, 3.0.0-ALPHA11, 3.0.0-ALPHA12]
+api: 3.0.0
 version: 2.1.5
 description: Replaces the same block broken with a certain x tick delay
 author: Angel
